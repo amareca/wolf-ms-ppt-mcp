@@ -26,8 +26,9 @@ presentations (`.pptx`) locally, **without requiring Microsoft Office**.
 
 **Phase 3 — Content (text and images):**
 
-- `set_slide_text` — set slide titles, subtitles, bodies or named shapes.
-- `add_text_box` — add a text box at a position (inches).
+- `set_slide_text` — set slide titles, subtitles, bodies or named shapes, with
+  optional color.
+- `add_text_box` — add a text box at a position (inches), with optional color.
 - `replace_text` — find/replace text across all slides or one slide.
 - `add_image` — insert an image from a local path or an http(s) URL.
 

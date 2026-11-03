@@ -28,3 +28,6 @@ samples/
 
 # Documentation (not published yet)
 docs/
+
+# Local OpenCode configuration (machine-specific)
+opencode.json
