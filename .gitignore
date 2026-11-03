@@ -25,3 +25,6 @@ Thumbs.db
 
 # Generated E2E artifacts
 samples/
+
+# Documentation (not published yet)
+docs/
