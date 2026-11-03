@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from pptx import Presentation
+from pptx.dml.color import RGBColor
 from pptx.enum.shapes import PP_PLACEHOLDER
 from pptx.shapes.base import BaseShape
 from pptx.slide import Slide
@@ -12,6 +13,53 @@ from pptx.slide import Slide
 from ..errors import TextTargetNotFoundError, WolfPptError
 from ..units import inches_to_emu
 from ._common import validate_slide_index
+
+_NAMED_COLORS = {
+    "black": "000000",
+    "white": "FFFFFF",
+    "red": "FF0000",
+    "green": "008000",
+    "blue": "0000FF",
+    "yellow": "FFFF00",
+    "darkyellow": "808000",
+    "orange": "FFA500",
+    "gray": "808080",
+    "grey": "808080",
+}
+
+
+def parse_color(value: str | None) -> RGBColor | None:
+    """Parse a hex color (e.g. ``#808000``) or a common color name."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise WolfPptError(
+            "color must be a hex string like '#808000' or a color name."
+        )
+
+    text = value.strip()
+    if not text:
+        raise WolfPptError("color must not be empty.")
+
+    lowered = text.lower().lstrip("#")
+    if lowered in _NAMED_COLORS:
+        return RGBColor.from_string(_NAMED_COLORS[lowered])
+
+    hex_value = lowered
+    if len(hex_value) == 3:
+        hex_value = "".join(char * 2 for char in hex_value)
+    if len(hex_value) != 6:
+        raise WolfPptError(
+            f"Invalid color '{value}'. Use a 6-digit hex value like '#808000' "
+            "or a name like 'darkyellow'."
+        )
+
+    try:
+        return RGBColor.from_string(hex_value.upper())
+    except ValueError as exc:
+        raise WolfPptError(
+            f"Invalid color '{value}'. Use a 6-digit hex value like '#808000'."
+        ) from exc
 
 
 def _text_shapes(slide: Slide) -> list[BaseShape]:
@@ -87,7 +135,19 @@ def _resolve_text_target(slide: Slide, selector: str) -> BaseShape:
     )
 
 
-def _set_shape_text(shape: BaseShape, value: str | list[str]) -> None:
+def _apply_color(shape: BaseShape, color: RGBColor | None) -> None:
+    if color is None:
+        return
+    for paragraph in shape.text_frame.paragraphs:
+        for run in paragraph.runs:
+            run.font.color.rgb = color
+
+
+def _set_shape_text(
+    shape: BaseShape,
+    value: str | list[str],
+    color: RGBColor | None = None,
+) -> None:
     if not shape.has_text_frame:
         raise WolfPptError(f"Shape '{shape.name}' has no text frame.")
     if isinstance(value, (list, tuple)):
@@ -95,25 +155,29 @@ def _set_shape_text(shape: BaseShape, value: str | list[str]) -> None:
     else:
         text = str(value)
     shape.text_frame.text = text
+    _apply_color(shape, color)
 
 
 def set_slide_text(
     prs: Presentation,
     index: int,
     content: str | dict[str, Any],
+    color: str | None = None,
 ) -> dict[str, Any]:
     """Set text on a slide.
 
     - A string sets the slide title.
     - A dict maps selectors (``title``, ``subtitle``, ``body``, a placeholder
       index, or a shape name) to strings or lists of paragraphs.
+    - ``color`` accepts a hex string or a common color name.
     """
     validate_slide_index(prs, index)
     slide = prs.slides[index]
+    rgb = parse_color(color)
 
     if isinstance(content, str):
         shape = _resolve_text_target(slide, "title")
-        _set_shape_text(shape, content)
+        _set_shape_text(shape, content, rgb)
         return {"index": index, "updated": ["title"]}
 
     if not isinstance(content, dict):
@@ -128,7 +192,7 @@ def set_slide_text(
         for selector, value in content.items()
     ]
     for _selector, shape, value in resolved:
-        _set_shape_text(shape, value)
+        _set_shape_text(shape, value, rgb)
 
     return {"index": index, "updated": [selector for selector, _, _ in resolved]}
 
@@ -141,6 +205,7 @@ def add_text_box(
     y: float,
     w: float,
     h: float,
+    color: str | None = None,
 ) -> BaseShape:
     """Add a text box to a slide. Coordinates and size are in inches."""
     validate_slide_index(prs, index)
@@ -155,6 +220,7 @@ def add_text_box(
         inches_to_emu(h),
     )
     shape.text_frame.text = text
+    _apply_color(shape, parse_color(color))
     return shape
 
 

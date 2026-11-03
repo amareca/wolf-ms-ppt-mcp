@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Optional `color` parameter for `set_slide_text` and `add_text_box` (hex or
+  named colors such as `darkyellow`).
+
 ## [0.1.0] - 2026-11-03
 
 ### Added

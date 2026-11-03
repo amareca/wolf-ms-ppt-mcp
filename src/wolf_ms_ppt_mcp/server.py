@@ -205,7 +205,11 @@ def move_slide(from_index: int, to_index: int) -> dict:
 
 
 @mcp.tool()
-def set_slide_text(index: int, content: dict | str) -> dict:
+def set_slide_text(
+    index: int,
+    content: dict | str,
+    color: str | None = None,
+) -> dict:
     """Set the text of a slide.
 
     Args:
@@ -214,9 +218,12 @@ def set_slide_text(index: int, content: dict | str) -> dict:
             targets to text. Targets can be "title", "subtitle", "body",
             "content", a placeholder index as a string, or a shape name.
             Values can be strings or lists of paragraphs.
+        color: Optional text color as a hex string (e.g. "#808000") or a
+            name such as "darkyellow", "yellow", "red", "blue", "green",
+            "orange", "gray", "black" or "white".
     """
     prs = _state.get()
-    result = text_ops.set_slide_text(prs, index, content)
+    result = text_ops.set_slide_text(prs, index, content, color=color)
     return {"ok": True, "message": "Slide text updated.", **result}
 
 
@@ -228,6 +235,7 @@ def add_text_box(
     y: float,
     w: float,
     h: float,
+    color: str | None = None,
 ) -> dict:
     """Add a text box to a slide. Coordinates and size are in inches.
 
@@ -238,9 +246,12 @@ def add_text_box(
         y: Top position in inches.
         w: Width in inches.
         h: Height in inches.
+        color: Optional text color as a hex string (e.g. "#808000") or a
+            name such as "darkyellow", "yellow", "red", "blue", "green",
+            "orange", "gray", "black" or "white".
     """
     prs = _state.get()
-    shape = text_ops.add_text_box(prs, index, text, x, y, w, h)
+    shape = text_ops.add_text_box(prs, index, text, x, y, w, h, color=color)
     return {
         "ok": True,
         "message": "Text box added.",

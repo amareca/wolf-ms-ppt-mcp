@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from pptx import Presentation
+from pptx.dml.color import RGBColor
 
 from wolf_ms_ppt_mcp.errors import (
     SlideIndexError,
@@ -140,3 +141,39 @@ def test_replace_text_invalid_scope_raises(tmp_path: Path):
 
     with pytest.raises(WolfPptError):
         text_ops.replace_text(prs, "Old", "New", scope="nope")
+
+
+def test_set_slide_text_color_hex(tmp_path: Path):
+    prs = PresentationState().load(_deck(tmp_path))
+
+    text_ops.set_slide_text(prs, 1, {"body": "Colored"}, color="#808000")
+
+    run = prs.slides[1].placeholders[1].text_frame.paragraphs[0].runs[0]
+    assert run.font.color.rgb == RGBColor(0x80, 0x80, 0x00)
+
+
+def test_set_slide_text_color_named(tmp_path: Path):
+    prs = PresentationState().load(_deck(tmp_path))
+
+    text_ops.set_slide_text(prs, 1, {"title": "Colored"}, color="darkyellow")
+
+    run = prs.slides[1].shapes.title.text_frame.paragraphs[0].runs[0]
+    assert run.font.color.rgb == RGBColor(0x80, 0x80, 0x00)
+
+
+def test_add_text_box_color(tmp_path: Path):
+    prs = PresentationState().load(_deck(tmp_path))
+
+    shape = text_ops.add_text_box(
+        prs, 1, "Box", 1, 1, 3, 1, color="yellow"
+    )
+
+    run = shape.text_frame.paragraphs[0].runs[0]
+    assert run.font.color.rgb == RGBColor(0xFF, 0xFF, 0x00)
+
+
+def test_invalid_color_raises(tmp_path: Path):
+    prs = PresentationState().load(_deck(tmp_path))
+
+    with pytest.raises(WolfPptError):
+        text_ops.set_slide_text(prs, 1, {"body": "x"}, color="notacolor")
